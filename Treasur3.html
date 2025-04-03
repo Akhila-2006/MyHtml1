@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Hunt: Code Challenge</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #0a192f;
+            color: #ccd6f6;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            transition: background-color 0.5s;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: #64ffda;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        }
+        .game-section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .active {
+            display: block;
+        }
+        
+        /* Difficulty Indicators */
+        .difficulty {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+        .easy {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .medium {
+            background-color: #f39c12;
+            color: white;
+        }
+        .hard {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        /* Challenge Styles */
+        .question {
+            background: #112240;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: left;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        pre {
+            background: #1e2a4a;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .code-output {
+            color: #f1c40f;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        input[type="text"], input[type="number"] {
+            background: #0a192f;
+            border: 2px solid #64ffda;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            width: 200px;
+        }
+        button {
+            background: #64ffda;
+            color: #0a192f;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px 5px;
+            font-family: 'Courier New', monospace;
+        }
+        button:hover {
+            background: #1effc3;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #result {
+            margin: 15px 0;
+            min-height: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .correct {
+            color: #64ffda;
+        }
+        .incorrect {
+            color: #ff5555;
+        }
+        .success-message {
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid #64ffda;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        /* Score Display */
+        .score-display {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 1.2rem;
+            background: rgba(16, 42, 82, 0.8);
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #64ffda;
+        }
+        
+        /* Treasure Styles */
+        .treasure-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .treasure-box {
+            font-size: 5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .treasure-box:hover {
+            transform: scale(1.2);
+        }
+        .treasure-box::after {
+            content: attr(data-value);
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            color: #64ffda;
+        }
+        .final-score {
+            font-size: 2rem;
+            color: #f1c40f;
+            margin: 20px 0;
+        }
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            animation: fall 5s linear infinite;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh); }
+        }
+        
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background-color: #112240;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 10px;
+            border-radius: 10px;
+            background-color: #64ffda;
+            width: 0%;
+            transition: width 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Score Display -->
+        <div class="score-display">
+            Score: <span id="score">0</span>/100
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="main-menu" class="game-section active">
+            <h1>Code Treasure Hunt</h1>
+            
+            <div class="question">
+                <h3>Game Instructions:</h3>
+                <p>1. Solve multiple coding challenges in each level</p>
+                <p>2. Sum the numerical outputs to get the password for next level</p>
+                <p>3. Earn points for each correct answer</p>
+                <p>4. Collect treasure boxes at the end based on your score!</p>
+            </div>
+            
+            <div class="levels">
+                <button class="level-btn" onclick="showLevel(1)">
+                    Level 1: Basic Challenges <span class="difficulty easy">2 Problems</span>
+                </button>
+                <button class="level-btn" id="level2-btn" disabled>
+                    Level 2: Intermediate Challenges <span class="difficulty medium">3 Problems</span>
+                </button>
+                <button class="level-btn" id="level3-btn" disabled>
+                    Level 3: Advanced Challenges <span class="difficulty hard">4 Problems</span>
+                </button>
+                <button class="level-btn" id="final-btn" disabled>
+                    Treasure Room <span class="difficulty">🎁</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Level 1: Easy (2 problems) -->
+        <div id="level1" class="game-section">
+            <h1>Level 1: Basic Challenges <span class="difficulty easy">2 Problems</span></h1>
+            
+            <div class="question">
+                <h3>Problem 1: Sum of Multiples</h3>
+                <p>Find the sum of all multiples of 3 or 5 below 10:</p>
+                <pre>function sumMultiples() {
+  let sum = 0;
+  for (let i = 1; i < 10; i++) {
+    if (i % 3 === 0 || i % 5 === 0) {
+      sum += i;
+    }
+  }
+  return sum;
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="number" id="answer1-1" placeholder="Enter the output">
+                <div id="result1-1"></div>
+                
+                <h3 style="margin-top: 30px;">Problem 2: Factorial</h3>
+                <p>Calculate the factorial of 5 (5!):</p>
+                <pre>function factorial() {
+  let result = 1;
+  for (let i = 2; i <= 5; i++) {
+    result *= i;
+  }
+  return result;
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="number" id="answer1-2" placeholder="Enter the output">
+                <div id="result1-2"></div>
+                
+                <div style="margin-top: 20px;">
+                    <p>Sum of both outputs: <span id="level1-sum">?</span></p>
+                    <button onclick="checkLevel1Answers()">Submit Answers</button>
+                </div>
+                
+                <div class="success-message" id="success1" style="display:none">
+                    <p>✅ Correct! Output sum: <strong>23 + 120 = 143</strong></p>
+                    <p>🎉 You earned <strong>30</strong> points!</p>
+                    <p>This sum is your password for Level 2</p>
+                    <button onclick="showLevel(2)">Continue to Level 2 →</button>
+                </div>
+            </div>
+            
+            <button onclick="showMainMenu()">← Back to Menu</button>
+        </div>
+
+        <!-- Level 2: Medium (3 problems) -->
+        <div id="level2" class="game-section">
+            <h1>Level 2: Intermediate Challenges <span class="difficulty medium">3 Problems</span></h1>
+            
+            <div class="question">
+                <h3>Problem 1: Fibonacci Sequence</h3>
+                <p>Find the 6th number in the Fibonacci sequence:</p>
+                <pre>function fibonacci() {
+  let a = 1, b = 1;
+  for (let i = 3; i <= 6; i++) {
+    let temp = a + b;
+    a = b;
+    b = temp;
+  }
+  return b;
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="number" id="answer2-1" placeholder="Enter the output">
+                <div id="result2-1"></div>
+                
+                <h3 style="margin-top: 30px;">Problem 2: String Reversal</h3>
+                <p>Reverse the string "hello":</p>
+                <pre>function reverseString() {
+  const str = "hello";
+  return str.split('').reverse().join('');
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="text" id="answer2-2" placeholder="Enter the output">
+                <div id="result2-2"></div>
+                
+                <h3 style="margin-top: 30px;">Problem 3: Array Sum</h3>
+                <p>Sum all numbers in this array: [3, 7, 5, 2]</p>
+                <pre>function arraySum() {
+  const arr = [3, 7, 5, 2];
+  return arr.reduce((sum, num) => sum + num, 0);
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="number" id="answer2-3" placeholder="Enter the output">
+                <div id="result2-3"></div>
+                
+                <div style="margin-top: 20px;">
+                    <p>Sum of numerical outputs: <span id="level2-sum">?</span></p>
+                    <button onclick="checkLevel2Answers()">Submit Answers</button>
+                </div>
+                
+                <div class="success-message" id="success2" style="display:none">
+                    <p>✅ Correct! Numerical sum: <strong>8 + 17 = 25</strong></p>
+                    <p>🎉 You earned <strong>30</strong> points!</p>
+                    <p>This sum is your password for Level 3</p>
+                    <button onclick="showLevel(3)">Continue to Level 3 →</button>
+                </div>
+            </div>
+            
+            <button onclick="showMainMenu()">← Back to Menu</button>
+        </div>
+
+        <!-- Level 3: Hard (4 problems) -->
+        <div id="level3" class="game-section">
+            <h1>Level 3: Advanced Challenges <span class="difficulty hard">4 Problems</span></h1>
+            
+            <div class="question">
+                <h3>Problem 1: Prime Number Check</h3>
+                <p>Check if 31 is a prime number (returns 1 for true, 0 for false):</p>
+                <pre>function isPrime(n) {
+  if (n <= 1) return 0;
+  if (n <= 3) return 1;
+  if (n % 2 === 0 || n % 3 === 0) return 0;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return 0;
+  }
+  return 1;
+}</pre>
+                <div class="code-output">Expected output for isPrime(31): <strong>?</strong></div>
+                <input type="number" id="answer3-1" placeholder="Enter 1 or 0">
+                <div id="result3-1"></div>
+                
+                <h3 style="margin-top: 30px;">Problem 2: Power Calculation</h3>
+                <p>Calculate 2 raised to the power of 5:</p>
+                <pre>function power() {
+  return Math.pow(2, 5);
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="number" id="answer3-2" placeholder="Enter the output">
+                <div id="result3-2"></div>
+                
+                <h3 style="margin-top: 30px;">Problem 3: String Length</h3>
+                <p>Find the length of "CodeTreasure":</p>
+                <pre>function stringLength() {
+  return "CodeTreasure".length;
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="number" id="answer3-3" placeholder="Enter the output">
+                <div id="result3-3"></div>
+                
+                <h3 style="margin-top: 30px;">Problem 4: Array Maximum</h3>
+                <p>Find the maximum number in [12, 5, 27, 8, 15]:</p>
+                <pre>function findMax() {
+  const arr = [12, 5, 27, 8, 15];
+  return Math.max(...arr);
+}</pre>
+                <div class="code-output">Expected output: <strong>?</strong></div>
+                <input type="number" id="answer3-4" placeholder="Enter the output">
+                <div id="result3-4"></div>
+                
+                <div style="margin-top: 20px;">
+                    <p>Sum of all outputs: <span id="level3-sum">?</span></p>
+                    <button onclick="checkLevel3Answers()">Submit Answers</button>
+                </div>
+                
+                <div class="success-message" id="success3" style="display:none">
+                    <p>✅ Correct! Output sum: <strong>1 + 32 + 11 + 27 = 71</strong></p>
+                    <p>🎉 You earned <strong>30</strong> points!</p>
+                    <button onclick="showFinalChallenge()">Enter Treasure Room →</button>
+                </div>
+            </div>
+            
+            <button onclick="showMainMenu()">← Back to Menu</button>
+        </div>
+
+        <!-- Final Challenge -->
+        <div id="final" class="game-section">
+            <h1>Treasure Room 🎁</h1>
+            
+            <div class="question">
+                <p>Enter the sum of numerical outputs from all levels:</p>
+                <p>Level 1 Sum: <strong>143</strong></p>
+                <p>Level 2 Sum: <strong>25</strong> (only numbers)</p>
+                <p>Level 3 Sum: <strong>71</strong></p>
+                <input type="number" id="final-answer" placeholder="Enter the total sum">
+                <button onclick="checkFinalAnswer()">Unlock Treasure</button>
+                <div id="final-result"></div>
+                
+                <div class="success-message" id="final-success" style="display:none">
+                    <p>🎉 Correct! Final Sum: <strong>143 + 25 + 71 = 239</strong></p>
+                    <p>You earned <strong>40</strong> bonus points!</p>
+                    <button onclick="showTreasure()">Claim Your Treasure →</button>
+                </div>
+            </div>
+            
+            <button onclick="showMainMenu()">← Back to Menu</button>
+        </div>
+
+        <!-- Treasure -->
+        <div id="treasure" class="game-section">
+            <h1>Congratulations! 🎉</h1>
+            <div class="final-score">Final Score: <span id="total-score">0</span>/100</div>
+            
+            <div class="treasure-container">
+                <div class="treasure-box" onclick="openTreasure(1)" data-value="Click to open">🎁</div>
+                <div class="treasure-box" onclick="openTreasure(2)" data-value="Click to open">🎁</div>
+                <div class="treasure-box" onclick="openTreasure(3)" data-value="Click to open">🎁</div>
+            </div>
+            
+            <div id="treasure-message"></div>
+            
+            <button onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            score: 0,
+            level1Completed: false,
+            level2Completed: false,
+            level3Completed: false,
+            finalCompleted: false,
+            treasuresOpened: 0,
+            level1Answers: [23, 120],
+            level2Answers: [8, "olleh", 17],
+            level3Answers: [1, 32, 11, 27]
+        };
+
+        // Initialize game
+        function initGame() {
+            updateMenu();
+            updateScore();
+        }
+
+        // Show specific section
+        function showSection(sectionId) {
+            document.querySelectorAll('.game-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // Show main menu
+        function showMainMenu() {
+            showSection('main-menu');
+            updateMenu();
+        }
+
+        // Show level
+        function showLevel(levelNum) {
+            showSection(`level${levelNum}`);
+            
+            // Update sum display when showing level
+            if (levelNum === 1) {
+                updateLevel1Sum();
+            } else if (levelNum === 2) {
+                updateLevel2Sum();
+            } else if (levelNum === 3) {
+                updateLevel3Sum();
+            }
+        }
+
+        // Show final challenge
+        function showFinalChallenge() {
+            showSection('final');
+        }
+
+        // Show treasure
+        function showTreasure() {
+            showSection('treasure');
+            document.getElementById('total-score').textContent = gameState.score;
+            createConfetti();
+        }
+
+        // Update level 1 sum display
+        function updateLevel1Sum() {
+            const answer1 = parseInt(document.getElementById('answer1-1').value) || 0;
+            const answer2 = parseInt(document.getElementById('answer1-2').value) || 0;
+            document.getElementById('level1-sum').textContent = `${answer1} + ${answer2} = ${answer1 + answer2}`;
+        }
+
+        // Update level 2 sum display (only numbers)
+        function updateLevel2Sum() {
+            const answer1 = parseInt(document.getElementById('answer2-1').value) || 0;
+            const answer3 = parseInt(document.getElementById('answer2-3').value) || 0;
+            document.getElementById('level2-sum').textContent = `${answer1} + ${answer3} = ${answer1 + answer3}`;
+        }
+
+        // Update level 3 sum display
+        function updateLevel3Sum() {
+            const answer1 = parseInt(document.getElementById('answer3-1').value) || 0;
+            const answer2 = parseInt(document.getElementById('answer3-2').value) || 0;
+            const answer3 = parseInt(document.getElementById('answer3-3').value) || 0;
+            const answer4 = parseInt(document.getElementById('answer3-4').value) || 0;
+            const sum = answer1 + answer2 + answer3 + answer4;
+            document.getElementById('level3-sum').textContent = `${answer1} + ${answer2} + ${answer3} + ${answer4} = ${sum}`;
+        }
+
+        // Check level 1 answers
+        function checkLevel1Answers() {
+            let allCorrect = true;
+            const pointsPerQuestion = 15; // 2 questions * 15 = 30 points
+            
+            // Check problem 1
+            const answer1 = parseInt(document.getElementById('answer1-1').value);
+            const result1 = document.getElementById('result1-1');
+            if (answer1 === gameState.level1Answers[0]) {
+                result1.textContent = "✅ Correct!";
+                result1.className = "correct";
+            } else {
+                result1.textContent = "❌ Incorrect!";
+                result1.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Check problem 2
+            const answer2 = parseInt(document.getElementById('answer1-2').value);
+            const result2 = document.getElementById('result1-2');
+            if (answer2 === gameState.level1Answers[1]) {
+                result2.textContent = "✅ Correct!";
+                result2.className = "correct";
+            } else {
+                result2.textContent = "❌ Incorrect!";
+                result2.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Update success message
+            const success = document.getElementById('success1');
+            if (allCorrect) {
+                success.style.display = 'block';
+                gameState.level1Completed = true;
+                gameState.score += pointsPerQuestion * 2; // 30 points for full level
+                updateScore();
+            } else {
+                success.style.display = 'none';
+                // Give partial credit for correct answers
+                let partialScore = 0;
+                if (answer1 === gameState.level1Answers[0]) partialScore += pointsPerQuestion;
+                if (answer2 === gameState.level1Answers[1]) partialScore += pointsPerQuestion;
+                gameState.score = Math.max(gameState.score, partialScore);
+                updateScore();
+            }
+            
+            updateMenu();
+        }
+
+        // Check level 2 answers
+        function checkLevel2Answers() {
+            let allCorrect = true;
+            const pointsPerQuestion = 10; // 3 questions * 10 = 30 points
+            
+            // Check problem 1
+            const answer1 = parseInt(document.getElementById('answer2-1').value);
+            const result1 = document.getElementById('result2-1');
+            if (answer1 === gameState.level2Answers[0]) {
+                result1.textContent = "✅ Correct!";
+                result1.className = "correct";
+            } else {
+                result1.textContent = "❌ Incorrect!";
+                result1.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Check problem 2
+            const answer2 = document.getElementById('answer2-2').value;
+            const result2 = document.getElementById('result2-2');
+            if (answer2 === gameState.level2Answers[1]) {
+                result2.textContent = "✅ Correct!";
+                result2.className = "correct";
+            } else {
+                result2.textContent = "❌ Incorrect!";
+                result2.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Check problem 3
+            const answer3 = parseInt(document.getElementById('answer2-3').value);
+            const result3 = document.getElementById('result2-3');
+            if (answer3 === gameState.level2Answers[2]) {
+                result3.textContent = "✅ Correct!";
+                result3.className = "correct";
+            } else {
+                result3.textContent = "❌ Incorrect!";
+                result3.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Update success message
+            const success = document.getElementById('success2');
+            if (allCorrect) {
+                success.style.display = 'block';
+                gameState.level2Completed = true;
+                gameState.score += pointsPerQuestion * 3; // 30 points for full level
+                updateScore();
+            } else {
+                success.style.display = 'none';
+                // Give partial credit for correct answers
+                let partialScore = gameState.level1Completed ? 30 : 0;
+                if (answer1 === gameState.level2Answers[0]) partialScore += pointsPerQuestion;
+                if (answer2 === gameState.level2Answers[1]) partialScore += pointsPerQuestion;
+                if (answer3 === gameState.level2Answers[2]) partialScore += pointsPerQuestion;
+                gameState.score = Math.max(gameState.score, partialScore);
+                updateScore();
+            }
+            
+            updateMenu();
+        }
+
+        // Check level 3 answers
+        function checkLevel3Answers() {
+            let allCorrect = true;
+            const pointsPerQuestion = 7.5; // 4 questions * 7.5 = 30 points
+            
+            // Check problem 1
+            const answer1 = parseInt(document.getElementById('answer3-1').value);
+            const result1 = document.getElementById('result3-1');
+            if (answer1 === gameState.level3Answers[0]) {
+                result1.textContent = "✅ Correct!";
+                result1.className = "correct";
+            } else {
+                result1.textContent = "❌ Incorrect!";
+                result1.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Check problem 2
+            const answer2 = parseInt(document.getElementById('answer3-2').value);
+            const result2 = document.getElementById('result3-2');
+            if (answer2 === gameState.level3Answers[1]) {
+                result2.textContent = "✅ Correct!";
+                result2.className = "correct";
+            } else {
+                result2.textContent = "❌ Incorrect!";
+                result2.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Check problem 3
+            const answer3 = parseInt(document.getElementById('answer3-3').value);
+            const result3 = document.getElementById('result3-3');
+            if (answer3 === gameState.level3Answers[2]) {
+                result3.textContent = "✅ Correct!";
+                result3.className = "correct";
+            } else {
+                result3.textContent = "❌ Incorrect!";
+                result3.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Check problem 4
+            const answer4 = parseInt(document.getElementById('answer3-4').value);
+            const result4 = document.getElementById('result3-4');
+            if (answer4 === gameState.level3Answers[3]) {
+                result4.textContent = "✅ Correct!";
+                result4.className = "correct";
+            } else {
+                result4.textContent = "❌ Incorrect!";
+                result4.className = "incorrect";
+                allCorrect = false;
+            }
+            
+            // Update success message
+            const success = document.getElementById('success3');
+            if (allCorrect) {
+                success.style.display = 'block';
+                gameState.level3Completed = true;
+                gameState.score += pointsPerQuestion * 4; // 30 points for full level
+                updateScore();
+            } else {
+                success.style.display = 'none';
+                // Give partial credit for correct answers
+                let partialScore = (gameState.level1Completed ? 30 : 0) + 
+                                 (gameState.level2Completed ? 30 : 0);
+                if (answer1 === gameState.level3Answers[0]) partialScore += pointsPerQuestion;
+                if (answer2 === gameState.level3Answers[1]) partialScore += pointsPerQuestion;
+                if (answer3 === gameState.level3Answers[2]) partialScore += pointsPerQuestion;
+                if (answer4 === gameState.level3Answers[3]) partialScore += pointsPerQuestion;
+                gameState.score = Math.max(gameState.score, partialScore);
+                updateScore();
+            }
+            
+            updateMenu();
+        }
+
+        // Check final answer (sum of numerical outputs only)
+        function checkFinalAnswer() {
+            const answer = parseInt(document.getElementById('final-answer').value);
+            const result = document.getElementById('final-result');
+            const success = document.getElementById('final-success');
+
+            // Calculate correct sum (143 from level1 + 25 from level2 + 71 from level3)
+            const correctSum = 143 + 25 + 71;
+
+            if (answer === correctSum) {
+                result.textContent = "";
+                result.className = "correct";
+                success.style.display = 'block';
+                gameState.finalCompleted = true;
+                gameState.score = Math.min(100, gameState.score + 40); // Bonus 40 points
+                updateScore();
+            } else {
+                result.textContent = "❌ Incorrect! Sum all the numerical outputs shown above.";
+                result.className = "incorrect";
+            }
+        }
+
+        // Open treasure box
+        function openTreasure(boxNum) {
+            if (gameState.treasuresOpened >= 3) return;
+            
+            const treasures = document.querySelectorAll('.treasure-box');
+            const message = document.getElementById('treasure-message');
+            
+            // Only allow opening if final challenge completed
+            if (!gameState.finalCompleted) {
+                message.textContent = "Complete all challenges to unlock the treasures!";
+                message.style.color = "#ff5555";
+                return;
+            }
+            
+            gameState.treasuresOpened++;
+            
+            // Determine prize based on score
+            let prize;
+            if (gameState.score >= 90) {
+                prize = ["💰", "💎", "🏆"][boxNum-1];
+            } else if (gameState.score >= 70) {
+                prize = ["💰", "💎", "✨"][boxNum-1];
+            } else {
+                prize = ["💰", "✨", "🪙"][boxNum-1];
+            }
+            
+            treasures[boxNum-1].textContent = prize;
+            treasures[boxNum-1].style.cursor = "default";
+            treasures[boxNum-1].onclick = null;
+            treasures[boxNum-1].setAttribute('data-value', 'Opened!');
+            
+            // Show message when all treasures opened
+            if (gameState.treasuresOpened === 3) {
+                if (gameState.score === 100) {
+                    message.innerHTML = "🏆 Perfect Score! You found all the treasures! 🏆";
+                } else if (gameState.score >= 80) {
+                    message.innerHTML = "🎉 Great Job! You found most of the treasures!";
+                } else {
+                    message.innerHTML = "Nice try! Better luck next time!";
+                }
+                message.style.color = "#64ffda";
+            }
+        }
+
+        // Update menu based on game state
+        function updateMenu() {
+            document.getElementById('level2-btn').disabled = !gameState.level1Completed;
+            document.getElementById('level3-btn').disabled = !gameState.level2Completed;
+            document.getElementById('final-btn').disabled = !gameState.level3Completed;
+            
+            // Update progress bar
+            const progress = gameState.score;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+        }
+
+        // Update score display
+        function updateScore() {
+            document.getElementById('score').textContent = gameState.score;
+            updateMenu();
+        }
+
+        // Create confetti effect
+        function createConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+            for(let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = confetti.style.width;
+                document.body.appendChild(confetti);
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            // Reset game state
+            gameState.score = 0;
+            gameState.level1Completed = false;
+            gameState.level2Completed = false;
+            gameState.level3Completed = false;
+            gameState.finalCompleted = false;
+            gameState.treasuresOpened = 0;
+            
+            // Clear all inputs and messages
+            for (let i = 1; i <= 3; i++) {
+                for (let j = 1; j <= 4; j++) {
+                    const answerField = document.getElementById(`answer${i}-${j}`);
+                    const resultField = document.getElementById(`result${i}-${j}`);
+                    const successField = document.getElementById(`success${i}`);
+                    
+                    if (answerField) answerField.value = '';
+                    if (resultField) {
+                        resultField.textContent = '';
+                        resultField.className = '';
+                    }
+                    if (successField) successField.style.display = 'none';
+                }
+            }
+            
+            document.getElementById('final-answer').value = '';
+            document.getElementById('final-result').textContent = '';
+            document.getElementById('final-result').className = '';
+            document.getElementById('final-success').style.display = 'none';
+            
+            // Reset treasure boxes
+            const treasures = document.querySelectorAll('.treasure-box');
+            treasures.forEach(box => {
+                box.textContent = "🎁";
+                box.style.cursor = "pointer";
+                box.onclick = function() { openTreasure(Array.from(treasures).indexOf(box) + 1); };
+                box.setAttribute('data-value', 'Click to open');
+            });
+            
+            document.getElementById('treasure-message').textContent = '';
+            
+            // Remove all confetti
+            document.querySelectorAll('.confetti').forEach(el => el.remove());
+            
+            updateScore();
+            showMainMenu();
+        }
+
+        // Set up event listeners for sum updates
+        document.getElementById('answer1-1').addEventListener('input', updateLevel1Sum);
+        document.getElementById('answer1-2').addEventListener('input', updateLevel1Sum);
+        document.getElementById('answer2-1').addEventListener('input', updateLevel2Sum);
+        document.getElementById('answer2-3').addEventListener('input', updateLevel2Sum);
+        document.getElementById('answer3-1').addEventListener('input', updateLevel3Sum);
+        document.getElementById('answer3-2').addEventListener('input', updateLevel3Sum);
+        document.getElementById('answer3-3').addEventListener('input', updateLevel3Sum);
+        document.getElementById('answer3-4').addEventListener('input', updateLevel3Sum);
+
+        // Initialize game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
